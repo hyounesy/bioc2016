@@ -10,3 +10,4 @@ Maintainer: Hamid Younesy <hyounesy@sfu.ca>
 License: MIT
 Suggests: BiocStyle, rmarkdown, knitr, httr
 VignetteBuilder: knitr
+SystemRequirements: Java 1.7+, VisRseq (latest)
