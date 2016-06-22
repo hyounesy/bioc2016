@@ -7,7 +7,9 @@ output: pdf_document
 abstract: |
   I will introduce the [VisRseq framework](http://visrseq.github.io) and walk the participants through the quick process of creating modules called R-apps from R packages. I expect this to be specially useful for bioinformaticians and package developers that develop R-based analysis tools and would like to make them accessible to their non-programmer collaborators or to the public without having to spend significant time on creating extensive graphical user interfaces. I will walk the participants through several examples of creating diverse types of apps, from simple plotting (e.g. plots) to intermediate (e.g. clustering) to more advanced (e.g. edgeR and DEseq) packages. I will also show how several R-apps can be linked together to create more complex workflows. Participants will require having beginner/intermediate knowledge of R and a machine with R and Java installation.
 vignette: |
-  %\VignetteIndexEntry{"Making your packages accessible to non-programmer collaborators using the VisRseq framework} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{"Making your packages accessible to non-programmer collaborators using the VisRseq framework}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ### VisRseq Overview
@@ -27,8 +29,8 @@ You can still follow the instructions and create R-apps using plain R, however y
 ### Structure of an R-App
 ![](images/anatomy.png)
 
-To create an R app you need a ```.R``` code containing the main script together with a ```.json``` file specifying parameters. 
-Each R app can have any number of "parameters", grouped into "categories". 
+To create an R app you need a ```.R``` code containing the main script together with a ```.json``` file specifying parameters.
+Each R app can have any number of "parameters", grouped into "categories".
 The ```.json``` file can be created manually or using the helper function in ```visrutils.R```
 ```{r}
 source("https://raw.githubusercontent.com/hyounesy/visr-apps/master/visrutils.R")
@@ -43,9 +45,9 @@ visr.app.end(printjson = FALSE, writefile = FALSE, filename = NULL)
 visr.param (name, label = NULL, info = NULL,
             default = NULL, min = NULL, max = NULL,
             items = NULL, item.labels = NULL,
-            type = c("string", "character", "int", "integer", 
+            type = c("string", "character", "int", "integer",
                      "double", "boolean", "logical", "multi-string",
-                     "column", "multi-column", 
+                     "column", "multi-column",
                      "column-numerical", "multi-column-numerical",
                      "color", "multi-color", "filename",
                      "output-column", "output-multi-column", "output-table"),
@@ -64,14 +66,14 @@ boxplot(mtcars[["mpg"]]~mtcars[["cyl"]], xlab = "cyl", ylab = "mpg")
 Assume we would like to allow user to use their own data set and be able to specify x and y columns from their data.
 
 We start the app definition by calling ```visr.app.start``` and specifying the app name. If we want be able to debug this app in R, we pass a test data set to ```debugdata```. This parameter will be ignored when running the app in VisRseq.
-The data assigned to an app will be stored in ```visr.input``` variable. 
+The data assigned to an app will be stored in ```visr.input``` variable.
 
 ```{r}
 visr.app.start("Simple Boxplot", debugdata=mtcars)
 ```
 
 
-We then add two parameters: ```y``` the numeric vector of data values that will be split into groups according to the parameter ```group```. 
+We then add two parameters: ```y``` the numeric vector of data values that will be split into groups according to the parameter ```group```.
 The parameter ```y``` has to be a numerical column in the input data, so we specify the ```type="column-numerical"```. The parameter ```group``` can be any column, so we specify ```type="column"```. In order to be able the debug the app inside the R, we also specify the values using ```debugvalue```. This is optional but recommended.
 
 ```{r}
@@ -92,11 +94,11 @@ We now have the json file. So we just have to modify our original R script to us
 ```{r eval=FALSE}
 visr.applyParameters()
 
-boxplot(visr.input[[visr.param.y]]~visr.input[[visr.param.group]], 
+boxplot(visr.input[[visr.param.y]]~visr.input[[visr.param.group]],
         xlab = visr.param.group, ylab = visr.param.y)
 ```
 
-Done! now if we place the ```simple_boxplot.R``` and ```simple_boxplot.json``` inside ```VisRseq/visr/srcR/bioc2016``` and hit the ```Refresh``` icon above the apps pane, we will have our first custom app in VisRseq under the ```bioc2016``` folder. 
+Done! now if we place the ```simple_boxplot.R``` and ```simple_boxplot.json``` inside ```VisRseq/visr/srcR/bioc2016``` and hit the ```Refresh``` icon above the apps pane, we will have our first custom app in VisRseq under the ```bioc2016``` folder.
 For demonstration, here we have used the app to draw a boxplot for the iris dataset.
 
 ![](images/simple_boxplot.png)
@@ -113,8 +115,8 @@ visr.app.end(printjson=TRUE, writefile = FALSE, filename = NULL)
 visr.applyParameters()
 
 # code
-boxplot(visr.input[[visr.param.y]]~visr.input[[visr.param.group]], 
-        xlab = visr.param.group, 
+boxplot(visr.input[[visr.param.y]]~visr.input[[visr.param.group]],
+        xlab = visr.param.group,
         ylab = visr.param.y)
 ```
 
@@ -126,7 +128,7 @@ Let's do an exercise and create another app to draw violin plots.
 
 ### Example 2: Kmeans
 
-We will now make something more interesting: A kmeans clustering app. 
+We will now make something more interesting: A kmeans clustering app.
 Like the previous example, we will start with the R script for kmeans clustering.
 
 ```{r}
@@ -142,7 +144,7 @@ plot(cluster_data, col = as.integer(clusterid))
 # start parameter definition
 visr.app.start("Simple Kmeans", debugdata = iris)
 visr.category("clustering parameters")
-visr.param("columns", type = "multi-column-numerical", 
+visr.param("columns", type = "multi-column-numerical",
            debugvalue = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"))
 visr.param("k", default = 3)
 visr.param("algorithm", items = c("Hartigan-Wong", "Lloyd", "Forgy", "MacQueen"))
@@ -156,10 +158,10 @@ visr.app.end(printjson=TRUE)
 visr.applyParameters()
 
 cluster_data<-subset(visr.input, select = visr.param.columns)
-visr.param.output.clusterid <- kmeans(cluster_data, 
-                                      centers = visr.param.k, 
+visr.param.output.clusterid <- kmeans(cluster_data,
+                                      centers = visr.param.k,
                                       algorithm = visr.param.algorithm)$cluster
-plot(cluster_data, main = visr.param.plot.title, 
+plot(cluster_data, main = visr.param.plot.title,
      col = as.integer(visr.param.output.clusterid))
 ```
 
@@ -172,7 +174,7 @@ source("visrutils.R")
 #  parameters
 visr.app.start("Simple Kmeans", debugdata = iris)
 visr.category("clustering parameters")
-visr.param("columns", type = "multi-column-numerical", 
+visr.param("columns", type = "multi-column-numerical",
            debugvalue = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"))
 visr.param("k", default = 3)
 visr.param("algorithm", items = c("Hartigan-Wong", "Lloyd", "Forgy", "MacQueen"))
@@ -184,17 +186,17 @@ visr.applyParameters()
 
 # kmeans code
 cluster_data<-subset(visr.input, select = visr.param.columns)
-visr.param.output.clusterid <- kmeans(cluster_data, 
-                                      centers = visr.param.k, 
+visr.param.output.clusterid <- kmeans(cluster_data,
+                                      centers = visr.param.k,
                                       algorithm = visr.param.algorithm)$cluster
-plot(cluster_data, main = visr.param.plot.title, 
+plot(cluster_data, main = visr.param.plot.title,
      col = as.integer(visr.param.output.clusterid))
 ```
 
 
 #### Chaining apps
 When running kmeans inside VisRseq on a test data, the result of the clustering will be stored in a new column specified by output cluster id.
-We can preview this new column in a table view app, or even better we can now use that with the boxplot app we created earlier. 
+We can preview this new column in a table view app, or even better we can now use that with the boxplot app we created earlier.
 ![](images/kmeans_boxplot.png)
 
 
@@ -202,7 +204,7 @@ We can preview this new column in a table view app, or even better we can now us
 ```{r}
 library("edgeR", quietly=T)
 countdata = read.table(
-  "https://raw.githubusercontent.com/hyounesy/bioc2016.visrseq/master/data/counts.txt", 
+  "https://raw.githubusercontent.com/hyounesy/bioc2016.visrseq/master/data/counts.txt",
   header=T, row.names = 1)
 x <- countdata
 head(x)
@@ -296,4 +298,3 @@ visr.param.output.de <- as.factor(is.de)
 # The log-fold change for each gene is plotted against the average abundance
 plotSmear(y, de.tags = rownames(y)[is.de != 0])
 ```
-
