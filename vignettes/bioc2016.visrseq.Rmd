@@ -10,6 +10,10 @@ vignette: |
   %\VignetteIndexEntry{"Making your packages accessible to non-programmer collaborators using the VisRseq framework} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
 ---
 
+### VisRseq Overview
+![](images/screenshot.png)
+
+
 ## Goals for this workshop
 
 - Learn about VisRseq framework.
@@ -19,10 +23,6 @@ vignette: |
 ## Requirements
 To get the most out of this workshop you are recommended to install the latest version of VisRseqfrom [visrseq.github.io/downloads](http://visrseq.github.io/downloads).
 You can still follow the instructions and create R-apps using plain R, however you will require VisRseq to be able to run the apps and see the results.
-
-### VisRseq Overview
-![](images/screenshot.png)
-
 
 ### Structure of an R-App
 ![](images/anatomy.png)
@@ -112,15 +112,52 @@ boxplot(visr.input[[visr.param.y]]~visr.input[[visr.param.group]], xlab = visr.p
 
 
 ### Example 2: Kmeans
+
+We will now make something more interesting. A kmeans clustering app. Like the previous example, we will start with a R script for kmeans clustering.
+
+```{r}
+input <- iris
+columns <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
+cluster_data<-subset(input, select = columns)
+clusterid <- kmeans(cluster_data, centers = 3)$cluster
+plot(cluster_data, col = as.integer(clusterid))
+```
+
+
 ```{r}
 # start parameter definition
-visr.app.start("kmeans", debugdata = iris)
+visr.app.start("Simple Kmeans", debugdata = iris)
 visr.category("clustering parameters")
-visr.param("columns", type = "multi-column-numerical", debugvalue = c("Sepal.Length", "Sepal.Width"))
+visr.param("columns", type = "multi-column-numerical", 
+           debugvalue = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"))
 visr.param("k", default = 3)
 visr.param("algorithm", items = c("Hartigan-Wong", "Lloyd", "Forgy", "MacQueen"))
 visr.category("output")
-visr.param("plot.type", items = c("scatter plot", "histogram"))
+visr.param("plot.title", default = "kmeans results")
+visr.param("output.clusterid", type = "output-column")
+visr.app.end(printjson=TRUE)
+
+```
+```{r eval=FALSE}
+visr.applyParameters()
+
+cluster_data<-subset(visr.input, select = visr.param.columns)
+visr.param.output.clusterid <- kmeans(cluster_data, visr.param.k, algorithm = visr.param.algorithm)$cluster
+plot(cluster_data, main = visr.param.plot.title, col = as.integer(visr.param.output.clusterid))
+```
+
+![](images/simple_kmeans.png)
+
+here is the complete source code for ```simple_kmeans.R``` app:
+```{r eval=FALSE}
+# start parameter definition
+visr.app.start("Simple Kmeans", debugdata = iris)
+visr.category("clustering parameters")
+visr.param("columns", type = "multi-column-numerical", 
+           debugvalue = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"))
+visr.param("k", default = 3)
+visr.param("algorithm", items = c("Hartigan-Wong", "Lloyd", "Forgy", "MacQueen"))
+visr.category("output")
 visr.param("plot.title", default = "kmeans results")
 visr.param("output.clusterid", type = "output-column")
 visr.app.end(printjson=TRUE)
@@ -129,17 +166,15 @@ visr.applyParameters()
 
 cluster_data<-subset(visr.input, select = visr.param.columns)
 visr.param.output.clusterid <- kmeans(cluster_data, visr.param.k, algorithm = visr.param.algorithm)$cluster
-
-# plotting options
-if (visr.param.plot.type == "scatter plot") {
-    plot(cluster_data, main = visr.param.plot.title, col = as.integer(visr.param.output.clusterid))
-} else {
-  clustersTable <- table(visr.param.output.clusterid)
-  lbls<-as.character(clustersTable)
-  bplt<-barplot(clustersTable , xlab="cluster ID", ylab = "cluster size", main=visr.param.plot.title)
-  text(y = 0, x = bplt, labels=lbls, xpd=TRUE, adj=c(0.5, -1))
-}
+plot(cluster_data, main = visr.param.plot.title, col = as.integer(visr.param.output.clusterid))
 ```
+
+
+#### Chaining apps
+When running kmeans inside VisRseq on a test data, the result of the clustering will be stored in a new column specified by output cluster id.
+We can preview this new column in a table view app, or even better we can now use that with the boxplot app we created earlier. 
+![](images/kmeans_boxplot.png)
+
 
 ### Example 3: Differntial expression analysis using edgeR
 ```{r}
@@ -199,3 +234,5 @@ visr.param.output.de <- as.factor(is.de)
 # The log-fold change for each gene is plotted against the average abundance
 plotSmear(y, de.tags = rownames(y)[is.de != 0])
 ```
+![](images/simple_edgeR.png)
+
