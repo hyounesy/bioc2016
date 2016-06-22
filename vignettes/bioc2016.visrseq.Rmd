@@ -14,22 +14,104 @@ vignette: |
 
 - Learn about VisRseq framework.
 
-- Learn how to create custom apps.
+- Learn how to create R-apps through several examples.
 
+## Requirements
+To get the most out of this workshop you are recommended to install the latest version of VisRseqfrom [visrseq.github.io/downloads](http://visrseq.github.io/downloads).
+You can still follow the instructions and create R-apps using plain R, however you will require VisRseq to be able to run the apps and see the results.
 
 ### VisRseq Overview
-![Example workflow in VisRseq](images/screenshot.png)
+![](images/screenshot.png)
 
 
 ### Structure of an R-App
-![Anatomory of an R-App in VisRseq](images/anatomy.png)
+![](images/anatomy.png)
 
-## Let's get started!
+To create an R app you need a ```.R``` code containing the main script together with a ```.json``` specifying parameters. 
+Each R app can have any number of "parameters"", grouped into "categories". 
+The ```.json``` file can be created manually or using the helper function in ```visrutils.R```
 ```{r}
 source("https://raw.githubusercontent.com/hyounesy/visr-apps/master/visrutils.R")
 ```
 
-### Example 1: Kmeans
+which defines the following functions among other things.
+
+```{r eval=FALSE}
+visr.app.start(name, info = "", debugdata = NULL)
+visr.category(label, info = "")
+visr.app.end(printjson = FALSE, writefile = FALSE, filename = NULL)
+visr.param (name, label = NULL, info = NULL,
+            default = NULL, min = NULL, max = NULL,
+            items = NULL, item.labels = NULL,
+            type = c("string", "character", "int", "integer", "double", "boolean", "logical", "multi-string",
+                     "column", "multi-column", "column-numerical", "multi-column-numerical",
+                     "color", "multi-color", "filename",
+                     "output-column", "output-multi-column", "output-table"),
+            filename.mode = c("load", "save", "dir"), debugvalue = NULL)
+```
+
+Let's get started and create our first app!
+
+### Example 1: Boxplot
+
+Let's start simple by creating a basic app that draws a barplot. Let's first write a basic boxplot script in a file ```simple_boxplot.R```:
+```{r}
+boxplot(mtcars[["mpg"]]~mtcars[["cyl"]], xlab = "cyl", ylab = "mpg")
+```
+
+Assume we would like to allow user to use their own data set and be able to specify x and y columns from their data.
+
+We start the app definition by calling ```visr.app.start``` and specifying the app name. If we want be able to debug this app in R, we pass a test data set to ```debugdata```. This parameter will be ignored when running the app in VisRseq.
+The data assigned to an app will be store in ```visr.input``` variable. 
+
+```{r}
+visr.app.start("Simple Boxplot", debugdata=mtcars)
+```
+
+
+We then add two parameters: ```y``` the numeric vector of data values that will be split into groups according to the parameter ```group```. 
+The parameter ```y``` has to be a numerical column in the input data, so we specify the ```type="column-numerical"```. The parameter ```group``` can be any column, so we specify ```type="column"```. Inorder to be able the debug the app inside the R, we also specify the values using ```debugvalue```. This is optional but recommended.
+
+```{r}
+visr.param("y", type="column-numerical", debugvalue="mpg")
+visr.param("group", type="column", debugvalue="cyl")
+```
+
+This will create two parameters ```visr.param.y``` and ```visr.param.group```. When running the script in R, they will be initialized with their corresponding debugvalue column names. When running the app in VisRseq, they will contain the string name of the column selected in the GUI.
+
+We end the definition by calling ```visr.app.end```. If argument ```printjson == TRUE```, the json data for the app parameters will be printed to console. If argument ```writefile == TRUE```, the output json will be written to a file specified by ```filename``` argument. If ```filename``` is not specified, the json file will be created at the same path of the the R script, with the same name, but ```.json``` extension (i.e. ```simple_boxplot.json```).
+
+```{r}
+visr.app.end(printjson=TRUE, writefile = FALSE, filename = NULL)
+```
+
+We now have the json file. So we just have to modify our original R script to use the correct parameter names.
+
+```{r eval=FALSE}
+visr.applyParameters()
+
+boxplot(visr.input[[visr.param.y]]~visr.input[[visr.param.group]], xlab = visr.param.group, ylab = visr.param.y)
+```
+
+Done! now if we place the ```simple_boxplot.R``` and ```simple_boxplot.json``` inside ```VisRseq/visr/srcR``` and hit the ```Refresh``` icon above the apps pane, we will have our first custom app in VisRseq. For demonstration purpose here we have used the app to draw a boxplot for the iris dataset.
+
+![](images/simple_boxplot.png)
+
+here is the complete source code for ```simple_boxplot.R``` app:
+
+```{r eval=FALSE}
+source("visrutils.R")
+visr.app.start("Simple Boxplot", debugdata=mtcars)
+visr.param("y", type="column-numerical", debugvalue="mpg")
+visr.param("group", type="column", debugvalue="cyl")
+visr.app.end(printjson=TRUE, writefile = FALSE, filename = NULL)
+visr.applyParameters()
+
+boxplot(visr.input[[visr.param.y]]~visr.input[[visr.param.group]], xlab = visr.param.group, ylab = visr.param.y)
+```
+
+
+### Example 2: Kmeans
 ```{r}
 # start parameter definition
 visr.app.start("kmeans", debugdata = iris)
@@ -59,7 +141,7 @@ if (visr.param.plot.type == "scatter plot") {
 }
 ```
 
-### Example 2: Differntial expression analysis using edgeR
+### Example 3: Differntial expression analysis using edgeR
 ```{r}
 library("edgeR", quietly=T)
 countdata = read.table("https://raw.githubusercontent.com/hyounesy/bioc2016.visrseq/master/data/counts.txt", header=T, row.names = 1)

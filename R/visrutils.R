@@ -139,10 +139,16 @@ visr.print<-function(msg) {
     print(msg)
 }
 
-# utility function to open data tables with corrected column names for debugging within R studio.
+
+# utility function to convert column names to correct format by replacing invalid characters with _
+visr.internal.validname <- function(columnnames) {
+  return (make.names(gsub("[^a-zA-Z0-9_]", "_", columnnames)))
+}
+
+# utility function to open data tables with corrected column names (useful for debugging within R studio)
 visr.readDataTable <-function(file) {
   t <- read.csv(file, sep = "\t", check.names = F)
-  colnames(t) <- make.names(gsub("[^a-zA-Z0-9_]", "_", colnames(t)))
+  colnames(t) <- visr.internal.validname(colnames(t))
   return (t)
 }
 
@@ -166,8 +172,6 @@ visr.setLogDir <- function(logDir) {
 }
 
 
-
-
 ###############################################
 #                  visr.app
 #
@@ -184,47 +188,67 @@ visr.internal.indent <- function(txt, indents=2) {
   paste(spaces, gsub("\n", paste("\n", spaces, sep=""), txt), sep="")
 }
 
-visr.internal.appendJSON<- function(txt) {
+# appends @param(txt) to the current json output
+visr.internal.appendJSON <- function(txt) {
   visr.var.appJSON <<- paste(visr.var.appJSON, txt, sep="")
 }
 
-visr.app.testWith <- function(filename=NULL, dataframe=NULL) {
-  if (visr.isGUI()) return()
-
-  if (!is.null(filename))
-    datafame <- visr.readDataTable(filename)
-
-  if (!is.null(dataframe)) {
-    visr.input <<- dataframe
-    input_table <<- visr.input
-  }
-}
-
-visr.app.start <- function(name, info = "") {
-  if (visr.isGUI()) return()
+#' Starts definition of parameters for an R app
+#' @param  name app name
+#' @param  info  app info shown as tooltip
+#' @param  debugdata  debug dataframe to be used when debuggin the app in R / RStudio
+visr.app.start <- function(name, info = "", debugdata = NULL) {
+  if (visr.isGUI())
+    return()
 
   visr.var.appJSON <<- paste('{\n  "label": "', name, '",\n  "info": "', info, '",\n  "categories":[', sep='')
   visr.var.definedCategory <<- FALSE
   visr.var.definedParam <<- FALSE
+
+  visr.input  <<- debugdata
+  input_table <<- debugdata
 }
 
-visr.app.end <- function(writeToFile=FALSE) {
-  if (visr.isGUI()) return()
+#' finishes the current apps parameter definition
+#' @param printjson     whether to print the generated json file to console
+#' @param writefile     whether to write the generated json to a file
+#' @param filename      path to the filename to write the json to. If not specified and
+#'                      writefile is TRUE, a json file is generated from the caller
+#'                      source file path by replacing .R with .json
+visr.app.end <- function(printjson = FALSE, writefile = FALSE, filename = NULL) { # preview=FALSE
+  if (visr.isGUI())
+    return()
 
   if (visr.var.definedCategory)
     visr.internal.appendJSON('\n    }\n  }')
+
   visr.internal.appendJSON(']\n}')
 
-  if (writeToFile) {
-    filename <- parent.frame(3)$ofile
-    filename <- paste(dirname(filename), "/", gsub("\\.R", ".json", basename(filename)), sep="")
-    print(paste("Writing app parameter description to", filename))
-    write(visr.var.appJSON, file=filename)
+  if (printjson) {
+    cat(visr.var.appJSON)
+  }
+
+  if (writefile) {
+    if (is.null(filename)) {
+      # auto generate the json file name from the R source filename
+      srcfilename <- parent.frame(3)$ofile
+      if (!is.null(srcfilename))
+        filename <- paste(dirname(srcfilename), "/", gsub("\\.R", ".json", basename(srcfilename)), sep="")
+    }
+
+    if (!is.null(filename)) {
+      print(paste("Writing app parameter description to", filename))
+      write(visr.var.appJSON, file=filename)
+    }
   }
 }
 
+#' Starts a new category of parameters for the app
+#' @param label   category label to be shown in VisRseq
+#' @param info    additional information about category shown as tooltip
 visr.category <- function(label, info = "") {
-  if (visr.isGUI()) return()
+  if (visr.isGUI())
+    return()
 
   if (visr.var.definedCategory)
     visr.internal.appendJSON('\n    }\n  },\n')
@@ -234,22 +258,29 @@ visr.category <- function(label, info = "") {
   visr.var.definedParam <<- FALSE
 }
 
-visr.param <- function(
-                    name, label = NULL, info = NULL,
-                    default = NULL, min = NULL, max = NULL,
-                    items = NULL, item.labels = NULL,
-                    filename.mode = c("load", "save", "dir"),
-                    type = c("string", "character", "int", "integer", "double", "boolean", "logical", "multi-string",
-                            "column", "multi-column", "column-numerical", "multi-column-numerical",
-                            "color", "multi-color", "filename",
-                            "output-column", "output-multi-column", "output-table")
-                    )
-{
-  if (visr.isGUI()) return()
+#' Adds a new parameter to the app
+#'
+#' @param name    parameter name. will be appended to "visr.param." to create the full variable name in R
+#' @param label   the label for the parameter's GUI control. will use name if NULL
+#' @param info    additional information about parameter shown as tooltip in VisRseq
+#' @param default default value for the parameter
+visr.param <- function(name, label = NULL, info = NULL,
+                       default = NULL, min = NULL, max = NULL,
+                       items = NULL, item.labels = NULL,
+                       filename.mode = c("load", "save", "dir"),
+                       type = c("string", "character", "int", "integer", "double", "boolean", "logical", "multi-string",
+                               "column", "multi-column", "column-numerical", "multi-column-numerical",
+                               "color", "multi-color", "filename",
+                               "output-column", "output-multi-column", "output-table"),
+                       debugvalue = NULL
+                      ) {
+  if (visr.isGUI())
+    return()
 
   paramname = paste("visr.param", name, sep=".") #full parameter name
 
   if (missing(type) && !is.null(default)) {
+    #guess type from the default value
     if (is.numeric(default) && (default %% 1 == 0))
       type <- "int"
     else if (is.numeric(default))
@@ -272,38 +303,43 @@ visr.param <- function(
   if (type == "filename") {
     filename.mode <- match.arg(filename.mode)
   } else {
-    if (!missing(filename.mode))
+    if (!missing(filename.mode)) {
       warning("filename.mode is ignored when type != 'filename'")
-    else
+    } else {
       filename.mode <- NULL
+    }
   }
 
   # check that type matches default
   if (!is.null(default)) {
     if (((type=="int" || type=="double") && !is.numeric(default)) ||
         ( type=="boolean" && !is.logical(default)) ||
-        ( type=="string" && !is.character(default))
-    ) stop ("default value does not match the type")
+        ( type=="string" && !is.character(default)))
+      stop ("default value does not match the type")
+
+    if (type == "color") {
+      default <- paste('#', paste(as.hexmode(col2rgb(default)), collapse=""), '', sep='')
+      #if (length(default) > 1) default <- apply(as.character(as.hexmode(col2rgb(default))), 2, paste, collapse="")
+    }
   }
 
-  evalDefault <- NULL
-  if (!is.null(default)) {
-    evalDefault <- default
+  # try to guess a debug value from the other properties
+  if (is.null(debugvalue)) {
+    if (!is.null(default)) {
+      debugvalue <- default
+    } else if (!is.null(items)) {
+      debugvalue <- items[1]
+    } else if (type == "multi-column" && !is.null(visr.input)) {
+      debugvalue <- colnames(visr.input)
+    } else if (type == "multi-column-numerical" && !is.null(visr.input)) {
+      debugvalue <- colnames(visr.input)[which(sapply(visr.input, is.numeric))]
+    }
   }
-  if (is.null(default) && !is.null(items)) {
-    evalDefault <- items[1]
-  }
-  default.ischar <- is.character(evalDefault)
-  if (is.null(evalDefault))
-    evalDefault <- "NULL"
+  assign(paramname, debugvalue, envir = .GlobalEnv)
 
-  # evaluate so that the default value is assigned to the new variable in R
-  eval(parse(text=paste(paramname,"<<-", paste('', evalDefault, '' , sep=ifelse(default.ischar, '"','')))))
-
+  default.ischar <- is.character(default)
   if (type == "boolean" && !is.null(default))
     default <- tolower(default)
-  if (type == "color" && !is.null(default))
-    default <- paste('#', paste(as.hexmode(col2rgb(default)), collapse=""), '', sep='')
 
   properties <- c(
     if (!is.null(label))    {paste('"label": ',   label,    '', sep='"')} else {NULL},
@@ -336,18 +372,18 @@ visr.param <- function(
 
 #unit test
 visr.internal.test.param <- function() {
-  visr.app.start("test-app", info="A test app")
+  visr.app.start("test-app", info="A test app", debugdata = iris)
   visr.param("test-minimal")
-  visr.param("test-auto-int", default=2)
-  visr.param("test-auto-double", default=0.5)
-  visr.param("test-auto-bool", default=FALSE)
+  visr.param("test-auto-int", default = 2)
+  visr.param("test-auto-double", default = 0.5)
+  visr.param("test-auto-bool", default = FALSE)
   visr.category("group2", "info for group2")
   #visr.param("test-mismatch", type="char", default=2)
   visr.param("test-color", label="foreground", info="foreground color", type="color", default = "yellow")
   visr.param("test-min-max", default=3, min=1, max=10)
   visr.param("test-filename", type="filename", filename.mode = "load")
   visr.param("test-items", items = c("i1","i2","i3"))
-  visr.app.end(filename="~/testapp.json")
+  visr.app.end(printjson=TRUE, filename="~/testapp.json")
   #cat(visr.var.appJSON)
 }
 
