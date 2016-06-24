@@ -1,11 +1,11 @@
 Package: bioc2016.visrseq
 Encoding: UTF-8
 Title: Materials for VisRseq Workshop at BioC2016 Conference
-Version: 0.0.1
+Version: 0.0.2
 Date: 2016-06-24
 Author: Hamid Younesy
 Maintainer: Hamid Younesy <hyounesy@sfu.ca>
-Description: Making your packages accessible to non-programmer collaborators using the VisRseq platform. 
+Description: Making your packages accessible to non-programmer collaborators using the VisRseq platform.
 Maintainer: Hamid Younesy <hyounesy@sfu.ca>
 License: MIT
 Suggests: BiocStyle, rmarkdown, knitr, httr
