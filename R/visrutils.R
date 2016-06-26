@@ -1,5 +1,9 @@
 error_message <- ""
-
+#' Check if running in GUI (VisRseq)
+#'
+#' Checks if running from within the VisRseq.
+#' @return  Will return \code{TRUE} if the code is running from within VisRseq.
+#' @export
 visr.isGUI<-function(){
   if (exists("visr.var.isGUI")) {
     if (visr.var.isGUI)
@@ -8,11 +12,25 @@ visr.isGUI<-function(){
   return(FALSE)
 }
 
+
+#' Apply GUI parameters
+#'
+#' Applies (imports) parameters spcified in the visrseq GUI to the R environment.
+#' @export
 visr.applyParameters <- function() {
   #if (exists("visr.var.message.ignore")) rm(visr.var.message.ignore)
   dummylocalvar<-"dummyvalue"
 }
 
+#' Show message dialog
+#'
+#' Shows a message dialog to the user in VisRseq.
+#' @param text   Message text to be shown.
+#' @param type   Message type. (\code{"error"} or \code{"warning"})
+#' @examples
+#' if (any(is.na(visr.input)))
+#'     visr.message("There are NA values in the input", type="error")
+#' @export
 visr.message<-function(text, type=c("error","warning"))
 {
   #TODO: replace error_message with visr.var.message
@@ -68,7 +86,10 @@ visr.libraryURL<-function (pkg,url) {
   }
 }
 
-# Loads a bioconductor package. If not already installed, tries to install the package from bioconductor.
+#' Load/install app dependent package
+#'
+#' Loads a bioconductor package. If not already installed, tries to install the package from bioconductor.
+#' @param pkg package name
 visr.biocLite<-function (pkg) {
   if (!require(pkg, character.only = TRUE)) {
     source("http://bioconductor.org/biocLite.R")
@@ -193,10 +214,16 @@ visr.internal.appendJSON <- function(txt) {
   visr.var.appJSON <<- paste(visr.var.appJSON, txt, sep="")
 }
 
-#' Starts definition of parameters for an R app
+#' Start app definition
+#'
+#' Starts definition of parameters for an R app.
 #' @param  name app name
 #' @param  info  app info shown as tooltip
 #' @param  debugdata  debug dataframe to be used when debuggin the app in R / RStudio
+#' @examples
+#' visr.app.start("kmeans", info="kmeans clustering")
+#' visr.app.start("kmeans", debugdata = iris) # will assign visr.input <- iris in debug mode
+#' @export
 visr.app.start <- function(name, info = "", debugdata = NULL) {
   if (visr.isGUI())
     return()
@@ -209,12 +236,15 @@ visr.app.start <- function(name, info = "", debugdata = NULL) {
   input_table <<- debugdata
 }
 
-#' finishes the current apps parameter definition
+#' End app definition
+#'
+#' Finishes the current apps parameter definition.
 #' @param printjson     whether to print the generated json file to console
 #' @param writefile     whether to write the generated json to a file
 #' @param filename      path to the filename to write the json to. If not specified and
 #'                      writefile is TRUE, a json file is generated from the caller
 #'                      source file path by replacing .R with .json
+#' @export
 visr.app.end <- function(printjson = FALSE, writefile = FALSE, filename = NULL) { # preview=FALSE
   if (visr.isGUI())
     return()
@@ -243,9 +273,14 @@ visr.app.end <- function(printjson = FALSE, writefile = FALSE, filename = NULL) 
   }
 }
 
+#' Start category
+#'
 #' Starts a new category of parameters for the app
 #' @param label   category label to be shown in VisRseq
 #' @param info    additional information about category shown as tooltip
+#' @examples
+#' visr.category("clustering parameters")
+#' @export
 visr.category <- function(label, info = "") {
   if (visr.isGUI())
     return()
@@ -258,35 +293,63 @@ visr.category <- function(label, info = "") {
   visr.var.definedParam <<- FALSE
 }
 
-#' Adds a new parameter to the app
+#' Add app parameter
 #'
-#' @param name    parameter name. will be appended to "visr.param." to create the full variable name in R
-#' @param label   the label for the parameter's GUI control. will use name if NULL
-#' @param info    additional information about parameter shown as tooltip in VisRseq
-#' @param default default value for the parameter
+#' Adds a new parameter to the curent app.
+#'
+#' @param name    Parameter name. will be appended to "visr.param." to create
+#'                the full variable name in R.
+#' @param label   The label for the parameter's GUI control.
+#'                Will use variable name if not specified (NULL).
+#' @param info    Additional information about parameter.
+#'                Will be shown as tooltip in VisRseq.
+#' @param type    Parameter type
+#' @param default Initial default value for the parameter.
+#' @param min     Minimum value for numerical type parameters
+#'                (\code{"int"}, \code{"double"})
+#' @param max     Maximum value for numerical type parameters
+#'                (\code{"int"}, \code{"double"})
+#' @param items   Specify a vector of items for a \code{"string"} variable to select from.
+#' @param item.labels Specify a vector of items to be used as the labels for \code{items} argument.
+#' @param filename.mode  Specify the file dialog mode
+#'                (file load, file save or directory) for a
+#'                \code{"filename"} type parameter
+#' @param debugvalue  The value to be assigned to the R variable in debug mode.
+#'                    Useful for unit testing.
+#' @examples
+#' visr.param("k", type = "integer") # specify type
+#' visr.param("k", default = 3L) # will infer type from default value
+#' visr.param("k", label = "number of clusters")  # explicitly specify label
+#' visr.param("title") # no type or default value: treated as a "string" type
+#' visr.param("algorithm", items = c("Hartigan-Wong", "Lloyd", "Forgy", "MacQueen"))
+#' visr.param("columns", type = "multi-column-numerical")
+#' visr.param("output.clusterid", type = "output-column") # column appended to input table
+#' @export
 visr.param <- function(name, label = NULL, info = NULL,
+                       type = c("string", "character", "int", "integer",
+                                "double", "boolean", "logical", "multi-string",
+                                "column", "multi-column",
+                                "column-numerical", "multi-column-numerical",
+                                "color", "multi-color", "filename",
+                                "output-column", "output-multi-column", "output-table"),
                        default = NULL, min = NULL, max = NULL,
                        items = NULL, item.labels = NULL,
                        filename.mode = c("load", "save", "dir"),
-                       type = c("string", "character", "int", "integer", "double", "boolean", "logical", "multi-string",
-                               "column", "multi-column", "column-numerical", "multi-column-numerical",
-                               "color", "multi-color", "filename",
-                               "output-column", "output-multi-column", "output-table"),
-                       debugvalue = NULL
-                      ) {
-  if (visr.isGUI())
+                       debugvalue = NULL) {
+  if (visr.isGUI()) # don't generate parameters when running within VisRseq
     return()
 
   paramname = paste("visr.param", name, sep=".") #full parameter name
 
   if (missing(type) && !is.null(default)) {
     #guess type from the default value
-    if (is.numeric(default) && (default %% 1 == 0))
+    if (is.numeric(default) && is.integer(default)) {
       type <- "int"
-    else if (is.numeric(default))
+    } else if (is.numeric(default)) {
       type <- "double"
-    else if (is.logical(default))
+    } else if (is.logical(default)) {
       type <- "boolean"
+    }
   }
   type <- match.arg(type)
 
@@ -313,8 +376,8 @@ visr.param <- function(name, label = NULL, info = NULL,
   # check that type matches default
   if (!is.null(default)) {
     if (((type=="int" || type=="double") && !is.numeric(default)) ||
-        ( type=="boolean" && !is.logical(default)) ||
-        ( type=="string" && !is.character(default)))
+          ( type=="boolean" && !is.logical(default)) ||
+          ( type=="string" && !is.character(default)))
       stop ("default value does not match the type")
 
     if (type == "color") {
@@ -370,11 +433,11 @@ visr.param <- function(name, label = NULL, info = NULL,
   visr.var.definedParam <<- TRUE
 }
 
-#unit test
+#' Unit test
 visr.internal.test.param <- function() {
   visr.app.start("test-app", info="A test app", debugdata = iris)
   visr.param("test-minimal")
-  visr.param("test-auto-int", default = 2)
+  visr.param("test-auto-int", default = 2L)
   visr.param("test-auto-double", default = 0.5)
   visr.param("test-auto-bool", default = FALSE)
   visr.category("group2", "info for group2")
@@ -383,6 +446,8 @@ visr.internal.test.param <- function() {
   visr.param("test-min-max", default=3, min=1, max=10)
   visr.param("test-filename", type="filename", filename.mode = "load")
   visr.param("test-items", items = c("i1","i2","i3"))
+  visr.param("test-item-labels", items = c("i1","i2","i3"),
+             item.labels = c("item 1","item 2","item 3"))
   visr.app.end(printjson=TRUE, filename="~/testapp.json")
   #cat(visr.var.appJSON)
 }

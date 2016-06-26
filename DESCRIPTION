@@ -5,9 +5,14 @@ Version: 0.0.2
 Date: 2016-06-24
 Author: Hamid Younesy
 Maintainer: Hamid Younesy <hyounesy@sfu.ca>
-Description: Making your packages accessible to non-programmer collaborators using the VisRseq platform.
-Maintainer: Hamid Younesy <hyounesy@sfu.ca>
+Description: Making your packages accessible to non-programmer collaborators
+    using the VisRseq platform.
 License: MIT
-Suggests: BiocStyle, rmarkdown, knitr, httr
+Suggests:
+    BiocStyle,
+    rmarkdown,
+    knitr,
+    httr
 VignetteBuilder: knitr
 SystemRequirements: Java 1.7+, VisRseq (latest)
+RoxygenNote: 5.0.1
