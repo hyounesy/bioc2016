@@ -23,6 +23,21 @@ vignette: |
 - Learn how to create R-apps through several examples.
 
 ## Requirements
+### Full installation of workshop package
+```{r, eval=FALSE}
+# load bioc (if not already)
+source("https://bioconductor.org/biocLite.R")
+biocLite()
+
+# build the package and vignettes
+library(devtools)
+biocLite("hyounesy/bioc2016.visrseq", build_vignettes = T)
+library(bioc2016.visrseq)
+
+#open source of this vignette in R studio
+file.edit(system.file("doc","bioc2016.visrseq.Rmd", package="bioc2016.visrseq"))
+```
+
 To get the most out of this workshop you are recommended to install the latest version of VisRseq from [visrseq.github.io/downloads](http://visrseq.github.io/downloads).
 You can still follow the instructions and create R-apps using plain R, however you will require VisRseq to be able to run the apps and see the results.
 
