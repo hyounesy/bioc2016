@@ -12,7 +12,8 @@ Suggests:
     BiocStyle,
     rmarkdown,
     knitr,
-    httr
+    httr,
+    testthat
 VignetteBuilder: knitr
 SystemRequirements: Java 1.7+, VisRseq (latest)
 RoxygenNote: 5.0.1

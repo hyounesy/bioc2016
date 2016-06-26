@@ -1,4 +1,4 @@
-error_message <- ""
+assign("error_message", "", .GlobalEnv)
 #' Check if running in GUI (VisRseq)
 #'
 #' Checks if running from within the VisRseq.
@@ -36,19 +36,24 @@ visr.message<-function(text, type=c("error","warning"))
   #TODO: replace error_message with visr.var.message
   if (exists("error_message") && is.character(error_message) && nzchar(error_message)) {
     # There is an unhandled error message already. Concatenate this to it
-    error_message <<- paste(error_message,"\n", match.arg(type), ": ", text, sep = "")
+    assign("error_message",
+           paste(error_message,"\n", match.arg(type), ": ", text, sep = ""),
+           .GlobalEnv)
   } else {
-    error_message <<- paste(match.arg(type),": ", text, sep = "")
+    assign("error_message",
+           paste(match.arg(type),": ", text, sep = ""),
+           .GlobalEnv)
   }
 
   if (!visr.isGUI() && !exists("visr.var.message.ignore")) {
     print(error_message)
-    error_message <<- ""
+    assign("error_message", "", .GlobalEnv)
     invisible(user_choice<-readline(prompt="(s)top / (i)gnore / ignore (a)ll ? (s/i/a)"))
-    if (user_choice == "s")
+    if (user_choice == "s") {
       stop("Terminated", call. = FALSE, domain = NA)
-    else if (user_choice == "a")
-      visr.var.message.ignore <<- TRUE
+    } else if (user_choice == "a") {
+      assign("visr.var.message.ignore", TRUE, .GlobalEnv)
+    }
   }
 }
 
@@ -113,14 +118,14 @@ visr.biocLite<-function (pkg) {
 visr.internal.handleError <- function(e)
 {
   #todo, use a different variable
-  error_message <<- e$message
+  assign("error_message", e$message, .GlobalEnv)
 }
 
 # used in tryCatch
 visr.internal.handleWarning <- function(w)
 {
   #todo, use a different variable
-  error_message <<- w$message
+  assign("error_message", w$message, .GlobalEnv)
 }
 
 visr.rebuildPackages <- function()
@@ -175,7 +180,7 @@ visr.readDataTable <-function(file) {
 
 visr.setLogDir <- function(logDir) {
   if (FALSE) {
-    visr.var.logDir <<- logDir;
+    assign("visr.var.logDir", logDir, .GlobalEnv)
     if (nchar(logDir) > 0) {
       sinkFile <- file(paste(logDir,"/all.txt",sep=""), open = "wt")
       sink(sinkFile)
@@ -199,9 +204,9 @@ visr.setLogDir <- function(logDir) {
 # functions to create an app json file in R
 ###############################################
 
-visr.var.appJSON <- ""
-visr.var.definedCategory <- FALSE
-visr.var.definedParam <- FALSE
+assign("visr.var.appJSON", "", .GlobalEnv)
+assign("visr.var.definedCategory", FALSE, .GlobalEnv)
+assign("visr.var.definedParam", FALSE, .GlobalEnv)
 
 # indents all lines of a string where lines are separated by \n
 visr.internal.indent <- function(txt, indents=2) {
@@ -211,7 +216,7 @@ visr.internal.indent <- function(txt, indents=2) {
 
 # appends @param(txt) to the current json output
 visr.internal.appendJSON <- function(txt) {
-  visr.var.appJSON <<- paste(visr.var.appJSON, txt, sep="")
+  assign("visr.var.appJSON", paste(visr.var.appJSON, txt, sep=""), .GlobalEnv)
 }
 
 #' Start app definition
@@ -228,12 +233,14 @@ visr.app.start <- function(name, info = "", debugdata = NULL) {
   if (visr.isGUI())
     return()
 
-  visr.var.appJSON <<- paste('{\n  "label": "', name, '",\n  "info": "', info, '",\n  "categories":[', sep='')
-  visr.var.definedCategory <<- FALSE
-  visr.var.definedParam <<- FALSE
+  assign("visr.var.appJSON",
+         paste('{\n  "label": "', name, '",\n  "info": "', info, '",\n  "categories":[', sep=''),
+         .GlobalEnv)
+  assign("visr.var.definedCategory", FALSE, .GlobalEnv)
+  assign("visr.var.definedParam", FALSE, .GlobalEnv)
 
-  visr.input  <<- debugdata
-  input_table <<- debugdata
+  assign("visr.visr.input", debugdata, .GlobalEnv)
+  assign("input_table", debugdata, .GlobalEnv)
 }
 
 #' End app definition
@@ -289,8 +296,8 @@ visr.category <- function(label, info = "") {
     visr.internal.appendJSON('\n    }\n  },\n')
 
   visr.internal.appendJSON(paste('  {\n    "label": "', label, '",\n    "info": "', info, '",\n    "variables": {\n', sep=""))
-  visr.var.definedCategory <<- TRUE
-  visr.var.definedParam <<- FALSE
+  assign("visr.var.definedCategory", TRUE, .GlobalEnv)
+  assign("visr.var.definedParam", FALSE, .GlobalEnv)
 }
 
 #' Add app parameter
@@ -430,7 +437,8 @@ visr.param <- function(name, label = NULL, info = NULL,
   if (visr.var.definedParam)
     visr.internal.appendJSON(",\n")
   visr.internal.appendJSON(visr.internal.indent(jsonstr, 6))
-  visr.var.definedParam <<- TRUE
+  assign("visr.var.definedParam", TRUE, .GlobalEnv)
+
 }
 
 #' Unit test
