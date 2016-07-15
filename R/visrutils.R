@@ -239,7 +239,7 @@ visr.app.start <- function(name, info = "", debugdata = NULL) {
   assign("visr.var.definedCategory", FALSE, .GlobalEnv)
   assign("visr.var.definedParam", FALSE, .GlobalEnv)
 
-  assign("visr.visr.input", debugdata, .GlobalEnv)
+  assign("visr.input", debugdata, .GlobalEnv)
   assign("input_table", debugdata, .GlobalEnv)
 }
 
