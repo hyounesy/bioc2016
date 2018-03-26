@@ -1,6 +1,6 @@
 # Making R packages accessible to non-programmers using the VisRseq framework
 
-This repository contains the course materials for the Bioc 2016 workshop.
+This repository contains the course materials for the [Bioconductor 2016 workshop](http://bioconductor.org/help/course-materials/2016/BioC2016/).
 
 ## Abstract
 The goal of this workshop is to introduce the [VisRseq](http://visrseq.github.io) framework and walk through the quick process of creating modules called R-apps from R packages. This is specifically useful for bioinformaticians and developers that would like to make their R packages accessible to their non-programmer collaborators or to the public without having to spend significant time on creating extensive graphical user interfaces. 
